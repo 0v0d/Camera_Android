@@ -24,7 +24,7 @@ class CameraViewModel : ViewModel() {
     suspend fun bindCameraUseCases(appContent: Context, lifecycleOwner: LifecycleOwner) {
         val processCameraProvider = ProcessCameraProvider.awaitInstance(appContent)
         processCameraProvider.bindToLifecycle(
-            lifecycleOwner, CameraSelector.DEFAULT_FRONT_CAMERA, cameraPreviewUseCase
+            lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, cameraPreviewUseCase
         )
         try {
             awaitCancellation()
