@@ -1,6 +1,9 @@
 package com.example.camera.viewmodel
 
+import android.content.ContentValues
 import android.content.Context
+import android.os.Build
+import android.provider.MediaStore
 import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
@@ -13,8 +16,8 @@ import androidx.camera.lifecycle.awaitInstance
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import java.io.File
-import java.time.Instant
+import java.text.SimpleDateFormat
+import java.util.Locale
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,15 +55,30 @@ class CameraViewModel : ViewModel() {
     @OptIn(ExperimentalGetImage::class)
     fun takePicture(context: Context) {
         viewModelScope.launch {
-            val timestamp = Instant.now().epochSecond
-            val file = File(context.cacheDir, "$timestamp.jpg")
-            val outputFileOptions = ImageCapture.OutputFileOptions.Builder(
-                file,
-            ).build()
+            // ファイル名を生成
+            val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
+                .format(System.currentTimeMillis())
+            val displayName = "IMG_${name}.jpg"
 
-            takePictureUseCase.takePicture(
-                outputFileOptions = outputFileOptions,
-            )
+            // MediaStore用のContentValues
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+                put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CameraApp")
+                }
+            }
+
+            // MediaStoreに画像を保存
+            val outputFileOptions = ImageCapture.OutputFileOptions
+                .Builder(
+                    context.contentResolver,
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    contentValues
+                )
+                .build()
+
+            takePictureUseCase.takePicture(outputFileOptions)
         }
     }
 }
